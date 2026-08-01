@@ -4,7 +4,7 @@ from strands.models.ollama import OllamaModel
 
 model = OllamaModel(
     host="http://localhost:11434",
-    model_id="phi4-mini:3.8b",
+    model_id="qwen3.5:4b",
 )
 
 agent = Agent(model=model)

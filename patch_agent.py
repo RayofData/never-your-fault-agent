@@ -13,8 +13,8 @@ RIOT_UPDATES_URL = (
     "https://www.leagueoflegends.com/en-us/news/game-updates/"
 )
 OUTPUT_FILE = Path("latest_patch.md")
-MODEL_ID = "phi4-mini:3.8b"
-MAX_SOURCE_CHARACTERS = 60_000
+MODEL_ID = "llama3.2:3b"
+MAX_SOURCE_CHARACTERS = 24_000
 
 PATCH_URL_PATTERN = re.compile(
     r"/en-us/news/game-updates/"
@@ -144,6 +144,12 @@ def summarize_patch(patch_text: str) -> str:
     model = OllamaModel(
         host="http://localhost:11434",
         model_id=MODEL_ID,
+        max_tokens=1800,
+        temperature=0.1,
+        keep_alive="10m",
+        options={
+            "num_ctx": 12_288,
+        },
     )
 
     agent = Agent(
@@ -156,52 +162,71 @@ def summarize_patch(patch_text: str) -> str:
     )
 
     prompt = f"""
-Create a brief, player-friendly Markdown summary of these official
-League of Legends patch notes.
+Create a detailed, player-friendly Markdown digest of the official
+League of Legends patch notes below.
 
-Use this structure:
+Use this exact structure:
 
 ## Patch Overview
 
-Explain the patch's overall direction in 2 to 4 sentences.
+Write 3 to 5 sentences explaining the patch's overall direction and
+the most important gameplay effects.
 
-## Champion Changes
+## Most Important Champion Changes
 
-List each changed champion:
+Use these subsections when relevant:
 
-- **Champion**: **Buff**, **Nerf**, or **Adjustment** — Explain the
-  practical effect in one concise sentence.
+### Buffs
 
-## Item Changes
+### Nerfs
 
-List each changed item:
+### Adjustments
 
-- **Item**: **Buff**, **Nerf**, or **Adjustment** — Explain the
-  practical effect in one concise sentence.
+List up to 10 champion changes total.
 
-## Map and System Changes
+Use this format:
 
-Summarize changes to maps, objectives, runes, matchmaking, and other
-game systems.
+- **Champion**: Explain what changed and its practical gameplay effect
+  in one or two concise sentences.
 
-## Other Gameplay Changes
+## Important Item Changes
 
-Include relevant gameplay changes that do not fit above.
+List up to 6 meaningful item changes.
+
+Use this format:
+
+- **Item**: **Buff**, **Nerf**, or **Adjustment** — Explain what changed
+  and how it affects players.
+
+## Map, Rune, and System Changes
+
+List up to 6 important changes involving maps, objectives, runes,
+matchmaking, progression, game modes, or global systems.
+
+## Bug Fixes That Affect Gameplay
+
+List up to 5 bug fixes only when they could noticeably affect a match.
+Do not include minor visual or cosmetic fixes.
 
 ## What Players Should Know
 
-Provide 3 to 5 concise takeaways for ordinary players.
+Provide exactly 4 concise takeaways describing what players are most
+likely to notice in their next matches.
 
 Requirements:
 
-- Use only the supplied patch notes.
-- Include all meaningful gameplay changes present in the text.
-- Explain changes in player-friendly language.
-- Omit sections with no relevant changes.
-- Exclude skins, cosmetics, esports, promotions, and lore.
-- Do not include the patch number, date, or source URL.
-- Do not speculate about the metagame.
-- Return only Markdown.
+- Use only information explicitly present in the supplied patch notes.
+- Keep champion, item, ability, rune, and system names exactly as written.
+- Never combine two different champions or items into one entry.
+- Do not create new abilities, effects, statistics, or damage types.
+- Preserve numerical details when they clarify an important change.
+- Prioritize meaningful gameplay changes over minor edits.
+- Exclude skins, chromas, cosmetics, esports, promotions, and lore.
+- Do not include the patch number, publication date, or source URL.
+- Do not speculate about the future metagame.
+- Return only the Markdown report.
+- Keep the report between approximately 500 and 750 words.
+- Stop immediately after the fourth player takeaway.
 
 PATCH NOTES:
 
